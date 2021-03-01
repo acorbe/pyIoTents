@@ -175,8 +175,9 @@ async def main():
 
     my_controller.register_control(my_tent)
 
-    # await my_tent.enqueue_open_1s()
-    # await my_tent.enqueue_open_1s()
+    ## A queue with two elements seems important to start
+    await my_tent.enqueue_open_1s()
+    await my_tent.enqueue_open_1s()
 
     #my_controller.execute_loop
     IOLoop.current().spawn_callback( lambda : my_controller.execute_loop())
@@ -192,7 +193,7 @@ async def main():
             
         async def get(self):
             print("called MTG")
-            await self.foo_to_wrap(**kw)
+            await self.foo_to_wrap(**self.kw)
             return "ok"
         
 
