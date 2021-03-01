@@ -1,0 +1,44 @@
+<head>
+  <script>
+    function httpGetAsync(theUrl, callback)
+    {
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.onreadystatechange = function() { 
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+		callback(xmlHttp.responseText);
+	}
+	xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+	xmlHttp.send(null);
+    };
+
+    function dummy_callback(){};
+    
+    function async_open_1s(){
+	return httpGetAsync("/open1s",dummy_callback);
+    };
+
+    function async_open_3s(){
+	return httpGetAsync("/open3s",dummy_callback);
+    };
+
+    function async_close_1s(){
+	return httpGetAsync("/close1s",dummy_callback);
+    };
+
+    function async_close_3s(){
+	return httpGetAsync("/close3s",dummy_callback);
+    };
+
+    
+  </script>
+</head>
+
+<body>
+<span>Operations
+  <a href="#" onclick="async_open_1s()"> Open 1s </a> | 
+  <a href="#" onclick="async_open_3s()"> Open 3s </a> |
+  <a href="#" onclick="async_close_1s()"> Close 1s </a> | 
+  <a href="#" onclick="async_close_3s()"> Close 3s </a> |
+</span>
+  
+</body>
