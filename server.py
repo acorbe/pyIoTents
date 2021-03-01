@@ -128,33 +128,37 @@ class TentControl(object):
         print("DONE:", "enqueuing", command, "for", dt)
 
     async def enqueue_open_1s(self):
-        print("equeuing open 1s")
-        await self.my_owner.enqueue_command(
-            {'pin' : self.open_tent_pin
-             , 'dt' : 1})
-        print("DONE: equeuing open 1s")
+        await self.enqueue_dt("open",1)
+        # print("equeuing open 1s")
+        # await self.my_owner.enqueue_command(
+        #     {'pin' : self.open_tent_pin
+        #      , 'dt' : 1})
+        # print("DONE: equeuing open 1s")
 
     async def enqueue_close_1s(self):
-        print("equeuing open 1s")
-        await self.my_owner.enqueue_command(
-            {'pin' : self.close_tent_pin
-             , 'dt' : 1})
-        print("DONE: equeuing close 1s")
+        await self.enqueue_dt("close",1)
+        # print("equeuing open 1s")
+        # await self.my_owner.enqueue_command(
+        #     {'pin' : self.close_tent_pin
+        #      , 'dt' : 1})
+        # print("DONE: equeuing close 1s")
 
 
     async def enqueue_open_3s(self):
-        print("equeuing open 3s")
-        await self.my_owner.enqueue_command(
-            {'pin' : self.open_tent_pin
-             , 'dt' : 3})
-        print("DONE: equeuing open 3s")
+        await self.enqueue_dt("open",3)
+        # print("equeuing open 3s")
+        # await self.my_owner.enqueue_command(
+        #     {'pin' : self.open_tent_pin
+        #      , 'dt' : 3})
+        # print("DONE: equeuing open 3s")
 
     async def enqueue_close_3s(self):
-        print("equeuing close 3s")
-        await self.my_owner.enqueue_command(
-            {'pin' : self.close_tent_pin
-             , 'dt' : 3})
-        print("DONE: equeuing close 3s")
+        await self.enqueue_dt("close",3)
+        # print("equeuing close 3s")
+        # await self.my_owner.enqueue_command(
+        #     {'pin' : self.close_tent_pin
+        #      , 'dt' : 3})
+        # print("DONE: equeuing close 3s")
         
 
 with open("main.html") as f:
