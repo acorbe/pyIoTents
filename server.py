@@ -5,6 +5,7 @@ import tornado.web
 from tornado import gen
 import tornado.web
 import RPi.GPIO as GPIO
+
 GPIO.setmode(GPIO.BCM) # GPIO Numbers instead of board numbers
 
 
@@ -60,7 +61,7 @@ class CommandQueue(object):
         qsize = self.get_qsize()
         if verbose: 
             print(f"deciding on adding a waiting block (qsize: {qsize})")
-        if qsize == 1:             
+        if qsize <= 1:             
             await self.enqueue_command({'pin' : None, 'dt' : 0.2})
             if verbose:
                 print("adding wait block")
@@ -129,36 +130,15 @@ class TentControl(object):
 
     async def enqueue_open_1s(self):
         await self.enqueue_dt("open",1)
-        # print("equeuing open 1s")
-        # await self.my_owner.enqueue_command(
-        #     {'pin' : self.open_tent_pin
-        #      , 'dt' : 1})
-        # print("DONE: equeuing open 1s")
 
     async def enqueue_close_1s(self):
         await self.enqueue_dt("close",1)
-        # print("equeuing open 1s")
-        # await self.my_owner.enqueue_command(
-        #     {'pin' : self.close_tent_pin
-        #      , 'dt' : 1})
-        # print("DONE: equeuing close 1s")
-
 
     async def enqueue_open_3s(self):
         await self.enqueue_dt("open",3)
-        # print("equeuing open 3s")
-        # await self.my_owner.enqueue_command(
-        #     {'pin' : self.open_tent_pin
-        #      , 'dt' : 3})
-        # print("DONE: equeuing open 3s")
 
     async def enqueue_close_3s(self):
         await self.enqueue_dt("close",3)
-        # print("equeuing close 3s")
-        # await self.my_owner.enqueue_command(
-        #     {'pin' : self.close_tent_pin
-        #      , 'dt' : 3})
-        # print("DONE: equeuing close 3s")
         
 
 with open("main.html") as f:
@@ -180,8 +160,14 @@ async def main():
     my_controller.register_control(my_tent)
 
     ## A queue with two elements seems important to start
-    await my_tent.enqueue_open_1s()
-    await my_tent.enqueue_open_1s()
+    ## could be swapped by 2 waiting blocks?
+    # await my_tent.enqueue_open_1s()
+    # await my_tent.enqueue_open_1s()
+
+    await my_controller.add_waiting_block()
+    await my_controller.add_waiting_block()
+
+    
 
     #my_controller.execute_loop
     IOLoop.current().spawn_callback( lambda : my_controller.execute_loop())
@@ -202,14 +188,17 @@ async def main():
         
 
     def make_app():
-        il = lambda x : dict(foo_to_wrap  = x)
+        il = lambda x,**kw : dict(foo_to_wrap  = x,**kw)
         return tornado.web.Application([
             (r"/", MainHandler),
             (r"/test", TestHandler),
             (r"/open1s", MinimalTentGetter, il(my_tent.enqueue_open_1s)), #MinimalTentGetter(my_tent.enqueue_open_1s)),
             (r"/open3s", MinimalTentGetter, il(my_tent.enqueue_open_3s)),
             (r"/close1s", MinimalTentGetter, il(my_tent.enqueue_close_1s)),
-            (r"/close3s", MinimalTentGetter, il(my_tent.enqueue_close_3s))
+            (r"/close3s", MinimalTentGetter, il(my_tent.enqueue_close_3s)),
+            (r"/open10s", MinimalTentGetter, il(my_tent.enqueue_dt,command="open",dt=10)),
+            (r"/close10s", MinimalTentGetter, il(my_tent.enqueue_dt,command="close",dt=10)),
+            
         ])
 
     app = make_app()

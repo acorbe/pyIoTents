@@ -29,6 +29,15 @@
 	return httpGetAsync("/close3s",dummy_callback);
     };
 
+    function async_open_10s(){
+	return httpGetAsync("/open10s",dummy_callback);
+    };
+
+    function async_close_10s(){
+	return httpGetAsync("/close10s",dummy_callback);
+    };
+
+
     
   </script>
 </head>
@@ -39,6 +48,9 @@
   <a href="#" onclick="async_open_3s()"> Open 3s </a> |
   <a href="#" onclick="async_close_1s()"> Close 1s </a> | 
   <a href="#" onclick="async_close_3s()"> Close 3s </a> |
+  <a href="#" onclick="async_open_10s()"> Open 10s </a> |
+  <a href="#" onclick="async_close_10s()"> Close 10s </a> | 
+  
 </span>
   
 </body>
