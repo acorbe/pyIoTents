@@ -18,8 +18,21 @@ class CommandQueue(object):
         self.all_my_pins = set()
         self.my_controls = set()
 
-    def reset_queue(self):
+        
+    async def start_cycle(self):    
+
+        await self.reset_queue()
+        #my_controller.execute_loop
+        IOLoop.current().spawn_callback( lambda : self.execute_loop())
+
+
+    async def reset_queue(self):
         self.my_queue = Queue(maxsize = 4)
+
+        # the two blocks are to keep the queue alive
+        await self.add_waiting_block()
+        #await self.add_waiting_block()
+
         
         
     async def enqueue_command(self, command):
@@ -44,7 +57,7 @@ class CommandQueue(object):
 
     def all_off(self):
         # emergency mode: all pins go to zero
-        self.reset_queue()
+        # self.reset_queue()
 
         for pin in self.all_my_pins:
             GPIO.output(pin, GPIO.HIGH)
@@ -56,12 +69,15 @@ class CommandQueue(object):
         return self.my_queue.qsize()
     
     async def add_waiting_block(self, verbose = False):
-        
+        """Adds a waiting block ONLY if the queue needs it.
+        """
         
         qsize = self.get_qsize()
         if verbose: 
             print(f"deciding on adding a waiting block (qsize: {qsize})")
-        if qsize <= 1:             
+            
+        # A waiting block is added only if the queue is empty
+        if qsize < 1:             
             await self.enqueue_command({'pin' : None, 'dt' : 0.2})
             if verbose:
                 print("adding wait block")
@@ -71,8 +87,17 @@ class CommandQueue(object):
                 print("no waiting block!")
 
     async def execute_one_command(self,comm, verbose = 1):
-        pin = comm['pin']
+        pin = comm['pin'] 
         dt = comm['dt']
+        
+        # waiting blocks keep the thermodynamic equilibrium.
+        # When we execute a command, the queue gets shorter.
+        # This compensates.
+        # Note if the code is long enough, the waiting block
+        # won't be added.
+        await self.add_waiting_block()
+        
+        # none for waiting blocks
         if pin is not None:
             print("processing -- pin:", pin, "t:", dt, "s")
             
@@ -93,10 +118,9 @@ class CommandQueue(object):
         #try:
         while(True):
             async for comm in self.my_queue:
-                await self.add_waiting_block()
+                #print(self.my_queue)                
                 await self.execute_one_command(comm)
-                self.my_queue.task_done()
-                
+                self.my_queue.task_done()                
 
             if self.get_qsize() == 0:
                 break
@@ -156,6 +180,7 @@ class TestHandler(tornado.web.RequestHandler):
 async def main():
     my_tent = TentControl(24,23)
     my_controller = CommandQueue()
+    await my_controller.start_cycle()
 
     my_controller.register_control(my_tent)
 
@@ -164,13 +189,6 @@ async def main():
     # await my_tent.enqueue_open_1s()
     # await my_tent.enqueue_open_1s()
 
-    await my_controller.add_waiting_block()
-    await my_controller.add_waiting_block()
-
-    
-
-    #my_controller.execute_loop
-    IOLoop.current().spawn_callback( lambda : my_controller.execute_loop())
 
     print("loop starting past")
 

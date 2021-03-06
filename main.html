@@ -12,6 +12,11 @@
     };
 
     function dummy_callback(){};
+
+    function async_action_target_action_dt(target,action,dt){
+	// target is dummy for now
+	return httpGetAsync("/" + action + dt + "s",dummy_callback);
+    }
     
     function async_open_1s(){
 	return httpGetAsync("/open1s",dummy_callback);
