@@ -5,10 +5,11 @@ import tornado.web
 from tornado import gen
 import tornado.web
 import RPi.GPIO as GPIO
+import yaml
 
 GPIO.setmode(GPIO.BCM) # GPIO Numbers instead of board numbers
 
-
+SETTINGS_YAML = "./settings.yaml"
 
 # pin target 23, 24
 
@@ -176,50 +177,74 @@ class TestHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("test")
 
+class MinimalTentGetter(tornado.web.RequestHandler):
+    def initialize(self, foo_to_wrap,**kw):
+        
+        print("initialized MinimalTentGetter")
+        self.foo_to_wrap = foo_to_wrap
+        self.kw = kw
+            
+    async def get(self):
+        print("called MTG")
+        await self.foo_to_wrap(**self.kw)
+        return "ok"
 
-async def main():
-    my_tent = TentControl(24,23)
+il = lambda x,**kw : dict(foo_to_wrap  = x,**kw)
+def make_app(tornadoApplication_EndpointsExt):
+    
+    app_list = [
+        (r"/", MainHandler),
+        (r"/test", TestHandler)]
+
+    app_list.extend(tornadoApplication_EndpointsExt)
+    
+    # return tornado.web.Application([
+    #     (r"/", MainHandler),
+    #     (r"/test", TestHandler),
+        
+    #     # (r"/open1s", MinimalTentGetter, il(my_tent.enqueue_open_1s)), #MinimalTentGetter(my_tent.enqueue_open_1s)),
+    #     # (r"/open3s", MinimalTentGetter, il(my_tent.enqueue_open_3s)),
+    #     # (r"/close1s", MinimalTentGetter, il(my_tent.enqueue_close_1s)),
+    #     # (r"/close3s", MinimalTentGetter, il(my_tent.enqueue_close_3s)),
+    #     # (r"/open10s", MinimalTentGetter, il(my_tent.enqueue_dt,command="open",dt=10)),
+    #     # (r"/close10s", MinimalTentGetter, il(my_tent.enqueue_dt,command="close",dt=10)),
+    # ])
+    return tornado.web.Application(app_list)
+
+
+async def main(settings_file = SETTINGS_YAML):
+    with open(settings_file) as f:
+        settings = yaml.load(f, yaml.FullLoader)
+        
+    print(settings)
+
+    # controller initialization and start
     my_controller = CommandQueue()
     await my_controller.start_cycle()
 
-    my_controller.register_control(my_tent)
+    tornadoApplication_EndpointsExt = []
 
-    ## A queue with two elements seems important to start
-    ## could be swapped by 2 waiting blocks?
-    # await my_tent.enqueue_open_1s()
-    # await my_tent.enqueue_open_1s()
+    for appliance in settings["Appliances"]:
+        if appliance["type"] == "tent":
+            my_tent = TentControl(appliance["openPin"], appliance["closePin"])
+            my_controller.register_control(my_tent)
+
+            # adds basic actions endpoints for open and close for given times
+            # specified in the settings 
+            for dt in appliance["timeActionsSym"]:
+                tornadoApplication_EndpointsExt.extend([
+                    (r"/open{dt}s".format(dt=dt), MinimalTentGetter
+                     , il(my_tent.enqueue_dt,command="open",dt=dt))
+                    , (r"/close{dt}s".format(dt=dt), MinimalTentGetter
+                       , il(my_tent.enqueue_dt,command="close",dt=dt))
+                ])
 
 
-    print("loop starting past")
+    print("loop starting past")        
 
-    class MinimalTentGetter(tornado.web.RequestHandler):
-        def initialize(self, foo_to_wrap,**kw):
-            
-            print("initialized MinimalTentGetter")
-            self.foo_to_wrap = foo_to_wrap
-            self.kw = kw
-            
-        async def get(self):
-            print("called MTG")
-            await self.foo_to_wrap(**self.kw)
-            return "ok"
-        
 
-    def make_app():
-        il = lambda x,**kw : dict(foo_to_wrap  = x,**kw)
-        return tornado.web.Application([
-            (r"/", MainHandler),
-            (r"/test", TestHandler),
-            (r"/open1s", MinimalTentGetter, il(my_tent.enqueue_open_1s)), #MinimalTentGetter(my_tent.enqueue_open_1s)),
-            (r"/open3s", MinimalTentGetter, il(my_tent.enqueue_open_3s)),
-            (r"/close1s", MinimalTentGetter, il(my_tent.enqueue_close_1s)),
-            (r"/close3s", MinimalTentGetter, il(my_tent.enqueue_close_3s)),
-            (r"/open10s", MinimalTentGetter, il(my_tent.enqueue_dt,command="open",dt=10)),
-            (r"/close10s", MinimalTentGetter, il(my_tent.enqueue_dt,command="close",dt=10)),
-            
-        ])
-
-    app = make_app()
+    app = make_app(tornadoApplication_EndpointsExt)
+    
     app.listen(9000)
 
     await my_controller.waitqueue()
