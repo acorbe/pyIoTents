@@ -125,9 +125,6 @@ class CommandQueue(object):
 
             if self.get_qsize() == 0:
                 break
-
-            
-
             
 
 class TentControl(object):
@@ -153,18 +150,6 @@ class TentControl(object):
                  , 'dt' : dt})
         print("DONE:", "enqueuing", command, "for", dt)
 
-    async def enqueue_open_1s(self):
-        await self.enqueue_dt("open",1)
-
-    async def enqueue_close_1s(self):
-        await self.enqueue_dt("close",1)
-
-    async def enqueue_open_3s(self):
-        await self.enqueue_dt("open",3)
-
-    async def enqueue_close_3s(self):
-        await self.enqueue_dt("close",3)
-        
 
 with open("main.html") as f:
     main_page = f.read()
@@ -196,19 +181,8 @@ def make_app(tornadoApplication_EndpointsExt):
         (r"/", MainHandler),
         (r"/test", TestHandler)]
 
-    app_list.extend(tornadoApplication_EndpointsExt)
-    
-    # return tornado.web.Application([
-    #     (r"/", MainHandler),
-    #     (r"/test", TestHandler),
-        
-    #     # (r"/open1s", MinimalTentGetter, il(my_tent.enqueue_open_1s)), #MinimalTentGetter(my_tent.enqueue_open_1s)),
-    #     # (r"/open3s", MinimalTentGetter, il(my_tent.enqueue_open_3s)),
-    #     # (r"/close1s", MinimalTentGetter, il(my_tent.enqueue_close_1s)),
-    #     # (r"/close3s", MinimalTentGetter, il(my_tent.enqueue_close_3s)),
-    #     # (r"/open10s", MinimalTentGetter, il(my_tent.enqueue_dt,command="open",dt=10)),
-    #     # (r"/close10s", MinimalTentGetter, il(my_tent.enqueue_dt,command="close",dt=10)),
-    # ])
+    app_list.extend(tornadoApplication_EndpointsExt)    
+
     return tornado.web.Application(app_list)
 
 
@@ -242,7 +216,7 @@ async def main(settings_file = SETTINGS_YAML):
 
     print("loop starting past")        
 
-
+    # passes the endpoints from the appliances
     app = make_app(tornadoApplication_EndpointsExt)
     
     app.listen(9000)
@@ -256,6 +230,11 @@ async def main(settings_file = SETTINGS_YAML):
 if __name__ == '__main__':
     # IOLoop.current().run_sync(main)
     # GPIO.cleanup()
+    btn_input = 5
+    GPIO.setup(btn_input, GPIO.IN)
+    GPIO.add_event_detect(btn_input, GPIO.RISING, bouncetime=200, callback=lambda : print("threaded event")) 
+
+    
     try:
         IOLoop.current().run_sync(main)
     finally:
