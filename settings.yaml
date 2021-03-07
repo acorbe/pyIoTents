@@ -3,11 +3,11 @@ System:
 
 
 Appliances:
-  - id: tentLivingLeft
+  - idname: tentLivingLeft
     type: tent
     openPin: 24
     closePin: 23
     timeActionsSym: [1,3,5,10,15]
-    fullyOpenTimeEst: 20
-    fullyCloseTimeEst: 20
+    fullyOpenTimeEst: 28
+    fullyCloseTimeEst: 28
   

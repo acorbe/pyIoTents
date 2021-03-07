@@ -1,0 +1,30 @@
+<head>
+<script>
+    function httpGetAsync(theUrl, callback)
+    {
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.onreadystatechange = function() { 
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+		callback(xmlHttp.responseText);
+	}
+	xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+	xmlHttp.send(null);
+    };
+
+    function dummy_callback(){};
+
+    function async_action_target_action_dt(target,action,dt){
+	// target is dummy for now
+	return httpGetAsync("/" + target + "_"
+			    + action + dt + "s", dummy_callback);
+    };  
+</script>
+</head>
+
+<body>
+  {% for device in Appliances %}
+  <span>{{ device.idname }}</span>  
+  
+  
+  {% endfor %}  
+</body>
