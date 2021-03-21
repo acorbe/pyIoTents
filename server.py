@@ -1,4 +1,3 @@
-#import tornado.ioloop
 from tornado.ioloop import IOLoop
 from tornado.queues import Queue
 import tornado.web
@@ -7,11 +6,12 @@ import tornado.web
 import RPi.GPIO as GPIO
 import yaml
 
-GPIO.setmode(GPIO.BCM) # GPIO Numbers instead of board numbers
+GPIO.setmode(GPIO.BCM)  # GPIO Numbers instead of board numbers
 
 SETTINGS_YAML = "./settings.yaml"
 
 # pin target 23, 24
+
 
 class CommandQueue(object):
     def __init__(self):
@@ -34,7 +34,6 @@ class CommandQueue(object):
         await self.add_waiting_block()
         #await self.add_waiting_block()
 
-        
         
     async def enqueue_command(self, command):
         await self.my_queue.put(command)
@@ -94,7 +93,7 @@ class CommandQueue(object):
         # waiting blocks keep the thermodynamic equilibrium.
         # When we execute a command, the queue gets shorter.
         # This compensates.
-        # Note if the code is long enough, the waiting block
+        # Note if the queue is long enough, the waiting block
         # won't be added.
         await self.add_waiting_block()
         
@@ -104,7 +103,6 @@ class CommandQueue(object):
             
             GPIO.output(pin, GPIO.LOW) # on
             await gen.sleep(dt)
-            # GPIO.output(RELAIS_1_GPIO, GPIO.HIGH) # on
             GPIO.output(pin, GPIO.HIGH) # out
 
         else:
@@ -125,6 +123,7 @@ class CommandQueue(object):
 
             if self.get_qsize() == 0:
                 break
+
             
 
 class TentControl(object):
@@ -144,6 +143,8 @@ class TentControl(object):
 
     async def enqueue_dt(self,command,dt):
         print("enqueuing", command, "for", dt)
+        #  command must be in the my_pins dictionary.
+        #  acts as a factory for the command
         if command in self.my_pins:
             await self.my_owner.enqueue_command(
                 {'pin' : self.my_pins[command]
