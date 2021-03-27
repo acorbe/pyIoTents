@@ -246,9 +246,9 @@ if __name__ == '__main__':
     # GPIO.cleanup()
     btn_input = 5
     ## https://raspi.tv/2014/rpi-gpio-update-and-detecting-both-rising-and-falling-edges
-    GPIO.setup(btn_input, GPIO.IN)
-    GPIO.add_event_detect(btn_input, GPIO.FALLING
-                          , bouncetime=200, callback=lambda x : print("threaded event",x)) 
+    # GPIO.setup(btn_input, GPIO.IN)
+    # GPIO.add_event_detect(btn_input, GPIO.FALLING
+    #                       , bouncetime=200, callback=lambda x : print("threaded event",x)) 
 
     
     try:
