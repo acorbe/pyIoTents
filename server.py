@@ -172,6 +172,13 @@ class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.write(main_page)
 
+class TemplatedMainHandler(tornado.web.RequestHandler):
+    def initialize(self, settings):
+        self.settings = settings        
+    
+    def get(self):
+        self.render("./mainT.html",**self.settings['Appliances'])
+
 class TestHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("test")
@@ -189,11 +196,13 @@ class MinimalTentGetter(tornado.web.RequestHandler):
         return "ok"
 
 il = lambda x,**kw : dict(foo_to_wrap  = x,**kw)
-def make_app(tornadoApplication_EndpointsExt):
+def make_app(tornadoApplication_EndpointsExt, settings):
     
     app_list = [
         (r"/", MainHandler),
-        (r"/test", TestHandler)]
+        (r"/test", TestHandler),
+        (r"/mainT", TemplatedMainHandler, settings)
+    ]
 
     app_list.extend(tornadoApplication_EndpointsExt)    
 
@@ -221,9 +230,10 @@ async def main(settings_file = SETTINGS_YAML):
             # specified in the settings 
             for dt in appliance["timeActionsSym"]:
                 tornadoApplication_EndpointsExt.extend([
-                    (r"/open{dt}s".format(dt=dt), MinimalTentGetter
+                    (r"/open{dt}s_{name}".format(dt=dt, name = appliance["idname"])
+                     , MinimalTentGetter
                      , il(my_tent.enqueue_dt,command="open",dt=dt))
-                    , (r"/close{dt}s".format(dt=dt), MinimalTentGetter
+                    , (r"/close{dt}s_{name}".format(dt=dt, name = appliance["idname"]), MinimalTentGetter
                        , il(my_tent.enqueue_dt,command="close",dt=dt))
                 ])
 
@@ -231,9 +241,9 @@ async def main(settings_file = SETTINGS_YAML):
     print("loop starting past")        
 
     # passes the endpoints from the appliances
-    app = make_app(tornadoApplication_EndpointsExt)
+    app = make_app(tornadoApplication_EndpointsExt,settings)
     
-    app.listen(9000)
+    app.listen(settings["port"])
 
     await my_controller.waitqueue()
 
