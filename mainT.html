@@ -23,8 +23,19 @@
 
 <body>
   {% for device in Appliances %}
-  <span>{{ device.idname }}</span>  
+  <div>{{ device['idname'] }}
+    {% for op in device['timeActionsSym'] %}
+    <span>
+      <a href="#" onclick="async_action_target_action_dt('{{ device['idname'] }}', 'open', '{{ op }}')">
+	open {{ op }}s </a> | 
+    </span>
+    
+    <span>
+      <a href="#" onclick="async_action_target_action_dt('{{ device['idname'] }}', 'close', '{{ op }}')"> close {{ op }}s </a> |
+    </span>
+    {% end for %}
+  </div>  
   
   
-  {% endfor %}  
+  {% end for %}  
 </body>

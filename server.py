@@ -174,11 +174,12 @@ class MainHandler(tornado.web.RequestHandler):
 
 class TemplatedMainHandler(tornado.web.RequestHandler):
     def initialize(self, **kw):
-        self.settings = kw        
+        # print(kw)
+        self.all_settings = kw        
     
     def get(self):
-        print(self.settings['Appliances'])
-        self.render("./mainT.html",**self.settings['Appliances'])
+        print(self.all_settings['Appliances'])
+        self.render("./mainT.html", **self.all_settings)
 
 class TestHandler(tornado.web.RequestHandler):
     def get(self):
@@ -200,7 +201,7 @@ il = lambda x,**kw : dict(foo_to_wrap  = x,**kw)
 def make_app(tornadoApplication_EndpointsExt, settings):
     
     app_list = [
-        (r"/", MainHandler),
+        (r"/", TemplatedMainHandler, settings),
         (r"/test", TestHandler),
         (r"/mainT", TemplatedMainHandler, settings)
     ]
@@ -231,10 +232,10 @@ async def main(settings_file = SETTINGS_YAML):
             # specified in the settings 
             for dt in appliance["timeActionsSym"]:
                 tornadoApplication_EndpointsExt.extend([
-                    (r"/open{dt}s_{name}".format(dt=dt, name = appliance["idname"])
+                    (r"/{name}_open{dt}s".format(dt=dt, name = appliance["idname"])
                      , MinimalTentGetter
                      , il(my_tent.enqueue_dt,command="open",dt=dt))
-                    , (r"/close{dt}s_{name}".format(dt=dt, name = appliance["idname"]), MinimalTentGetter
+                    , (r"/{name}_close{dt}s".format(dt=dt, name = appliance["idname"]), MinimalTentGetter
                        , il(my_tent.enqueue_dt,command="close",dt=dt))
                 ])
 
