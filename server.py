@@ -173,8 +173,8 @@ class MainHandler(tornado.web.RequestHandler):
         self.write(main_page)
 
 class TemplatedMainHandler(tornado.web.RequestHandler):
-    def initialize(self, settings):
-        self.settings = settings        
+    def initialize(self, **kw):
+        self.settings = kw        
     
     def get(self):
         print(self.settings['Appliances'])
