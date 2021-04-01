@@ -177,6 +177,7 @@ class TemplatedMainHandler(tornado.web.RequestHandler):
         self.settings = settings        
     
     def get(self):
+        print(self.settings['Appliances'])
         self.render("./mainT.html",**self.settings['Appliances'])
 
 class TestHandler(tornado.web.RequestHandler):
