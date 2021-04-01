@@ -243,7 +243,7 @@ async def main(settings_file = SETTINGS_YAML):
     # passes the endpoints from the appliances
     app = make_app(tornadoApplication_EndpointsExt,settings)
     
-    app.listen(settings["port"])
+    app.listen(settings["System"]["port"])
 
     await my_controller.waitqueue()
 
