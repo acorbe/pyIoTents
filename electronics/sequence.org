@@ -1,0 +1,75 @@
+* Soldering sequence x2 tents
+
+Equipment: A-X x 1-10 THT board
+
+- Prepare
+  - white jumpers 2x2, equal
+  - red jumpers 2+2, all different 
+  - black jumpers 1+1, all different
+  - yellow 1+1, equal
+  - orange 1+1 (maybe a trace)
+
+
+- Under
+  - trace L/C3->D3 R/O3->P3   (left; yellow line to input contact on the left) 
+  - Unit trace L/D4 R/P4      (left; blue line on the left; prepares blue jumper to the right)
+  - Unit trace L/D6 R/P6      (left; orange left line; to input contact on the left)
+
+  
+  - trace L/I5->J5  R/U5->V5  (right; trace to green output contact)
+  - Unit trace L/I6 R/U6      (right; yellow right line; bridges IC to pullup)
+
+  - # middle jumper lines
+  - Orange jumper **or trace** L/F5->G4 R/R5->S4
+  - yellow jumper L/F3->G6 R/R3->S6
+
+  - # outer jumper lines (broken symmetry)
+  - H1->K1 red 5V line
+  - N1->T1 red 5V line
+  - E9->K9 black GND line
+  - N9->Q9 black GND line
+  - D10->I10 red 3.3V line
+  - P10->U10 red 3.3V line
+
+- Above
+  - white jumper L/D2->D7 R/P2->P7     (left; white jumper line)
+  - white jumper L/I3->I8 R/U3->U8     (right; white jumper line)
+
+  - 10K pullup L/C6->C10 R/O6->O10
+    - L/foot to right red line
+    - R/free foot
+  - 10K pullup L/J6->J10 R/V6->V10
+    - L/free foot
+    - R/to left red line
+
+  - IC cage L/E2->H8  R/Q2->T8
+
+
+- Under
+  - Traces around IC cage CCW from top white
+    - left White top to outside
+    - left Yellow line
+    - left blue line
+    - left orange bridge
+    - left White bottom
+    - left to GND black line
+    - right to 5V red line
+    - right White
+    - right to orange inner
+    - right to green outer
+    - right to yellow
+    - right yellow bridge
+    - right to white outside
+
+  - blue jumper L/C4->J4 R/O4->V4
+
+- Above
+    - Headers
+
+- Below
+    - finish traces around headers
+
+
+  
+
+  
