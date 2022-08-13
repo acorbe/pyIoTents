@@ -5,6 +5,7 @@ from tornado import gen
 import tornado.web
 import RPi.GPIO as GPIO
 import yaml
+import commands as cm
 
 GPIO.setmode(GPIO.BCM)  # GPIO Numbers instead of board numbers
 
@@ -19,20 +20,28 @@ class CommandQueue(object):
         self.all_my_pins = set()
         self.my_controls = set()
 
+        self.default_switch_pin_OFF_op = lambda pin: GPIO.output(pin, GPIO.HIGH)
+        self.default_switch_pin_ON_op = lambda pin: GPIO.output(pin, GPIO.LOW)
+        self.default_sleep_op = lambda dt: gen.sleep(dt)
+
+        self.current_switch_pin_OFF_op = self.default_switch_pin_OFF_op
+        self.current_switch_pin_ON_op = self.default_switch_pin_ON_op
+        self.current_sleep_op = self.default_sleep_op
+
         
-    async def start_cycle(self):    
+    async def start_cycle(self):
+        """starts ioloop cycle. Wrapper.
+        """
 
         await self.reset_queue()
-        #my_controller.execute_loop
         IOLoop.current().spawn_callback( lambda : self.execute_loop())
 
 
     async def reset_queue(self):
         self.my_queue = Queue(maxsize = 4)
 
-        # the two blocks are to keep the queue alive
+        # the waiting block is to keep the queue alive
         await self.add_waiting_block()
-        #await self.add_waiting_block()
 
         
     async def enqueue_command(self, command):
@@ -54,13 +63,14 @@ class CommandQueue(object):
 
         self.all_off()        
         
-
     def all_off(self):
-        # emergency mode: all pins go to zero
+        """emergency mode: all pins go to zero"""
         # self.reset_queue()
 
         for pin in self.all_my_pins:
-            GPIO.output(pin, GPIO.HIGH)
+            # Do not change, default command should not be highjacked
+            self.default_switch_pin_OFF_op(pin)
+            # GPIO.output(pin, GPIO.HIGH)
 
     def print_qsize(self):
         print("qsize", self.get_qsize())
@@ -78,7 +88,7 @@ class CommandQueue(object):
             
         # A waiting block is added only if the queue is empty
         if qsize < 1:             
-            await self.enqueue_command({'pin' : None, 'dt' : 0.2})
+            await self.enqueue_command(cm.WaitingBlock(0.2))
             if verbose:
                 print("adding wait block")
                 self.print_qsize()
@@ -87,8 +97,8 @@ class CommandQueue(object):
                 print("no waiting block!")
 
     async def execute_one_command(self,comm, verbose = 1):
-        pin = comm['pin'] 
-        dt = comm['dt']
+        pin = comm.pin
+        dt = comm.dt
         
         # waiting blocks keep the thermodynamic equilibrium.
         # When we execute a command, the queue gets shorter.
@@ -101,14 +111,17 @@ class CommandQueue(object):
         if pin is not None:
             print("processing -- pin:", pin, "t:", dt, "s")
             
-            GPIO.output(pin, GPIO.LOW) # on
-            await gen.sleep(dt)
-            GPIO.output(pin, GPIO.HIGH) # out
-
+            # GPIO.output(pin, GPIO.LOW) # on
+            # await gen.sleep(dt)
+            # GPIO.output(pin, GPIO.HIGH) # out
+            self.current_switch_pin_ON_op(pin)
+            await self.current_sleep_op(dt)
+            self.current_switch_pin_OFF_op(pin)
+            
         else:
             if verbose >= 2:
                 print("processing -- waiting block",dt,"s")
-            await gen.sleep(dt)
+            await self.current_sleep_op(dt)
 
     async def execute_loop(self):
         print("starting loop")
@@ -117,14 +130,13 @@ class CommandQueue(object):
         #try:
         while(True):
             async for comm in self.my_queue:
-                #print(self.my_queue)                
+                #print(self.my_queue)
                 await self.execute_one_command(comm)
-                self.my_queue.task_done()                
+                self.my_queue.task_done()
 
             if self.get_qsize() == 0:
                 break
 
-            
 
 class TentControl(object):
     def __init__(self, open_tent_pin, close_tent_pin):
@@ -147,8 +159,9 @@ class TentControl(object):
         #  acts as a factory for the command
         if command in self.my_pins:
             await self.my_owner.enqueue_command(
+                cm.StandardCommad(
                 {'pin' : self.my_pins[command]
-                 , 'dt' : dt})
+                 , 'dt' : dt}) )
         print("DONE:", "enqueuing", command, "for", dt)
 
 
@@ -158,6 +171,15 @@ with open("main.html") as f:
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.write(main_page)
+
+class TemplatedMainHandler(tornado.web.RequestHandler):
+    def initialize(self, **kw):
+        # print(kw)
+        self.all_settings = kw        
+    
+    def get(self):
+        print(self.all_settings['Appliances'])
+        self.render("./mainT.html", **self.all_settings)
 
 class TestHandler(tornado.web.RequestHandler):
     def get(self):
@@ -176,11 +198,13 @@ class MinimalTentGetter(tornado.web.RequestHandler):
         return "ok"
 
 il = lambda x,**kw : dict(foo_to_wrap  = x,**kw)
-def make_app(tornadoApplication_EndpointsExt):
+def make_app(tornadoApplication_EndpointsExt, settings):
     
     app_list = [
-        (r"/", MainHandler),
-        (r"/test", TestHandler)]
+        (r"/", TemplatedMainHandler, settings),
+        (r"/test", TestHandler),
+        (r"/mainT", TemplatedMainHandler, settings)
+    ]
 
     app_list.extend(tornadoApplication_EndpointsExt)    
 
@@ -208,9 +232,10 @@ async def main(settings_file = SETTINGS_YAML):
             # specified in the settings 
             for dt in appliance["timeActionsSym"]:
                 tornadoApplication_EndpointsExt.extend([
-                    (r"/open{dt}s".format(dt=dt), MinimalTentGetter
+                    (r"/{name}_open{dt}s".format(dt=dt, name = appliance["idname"])
+                     , MinimalTentGetter
                      , il(my_tent.enqueue_dt,command="open",dt=dt))
-                    , (r"/close{dt}s".format(dt=dt), MinimalTentGetter
+                    , (r"/{name}_close{dt}s".format(dt=dt, name = appliance["idname"]), MinimalTentGetter
                        , il(my_tent.enqueue_dt,command="close",dt=dt))
                 ])
 
@@ -218,9 +243,9 @@ async def main(settings_file = SETTINGS_YAML):
     print("loop starting past")        
 
     # passes the endpoints from the appliances
-    app = make_app(tornadoApplication_EndpointsExt)
+    app = make_app(tornadoApplication_EndpointsExt,settings)
     
-    app.listen(9000)
+    app.listen(settings["System"]["port"])
 
     await my_controller.waitqueue()
 
@@ -232,8 +257,10 @@ if __name__ == '__main__':
     # IOLoop.current().run_sync(main)
     # GPIO.cleanup()
     btn_input = 5
-    GPIO.setup(btn_input, GPIO.IN)
-    GPIO.add_event_detect(btn_input, GPIO.RISING, bouncetime=200, callback=lambda : print("threaded event")) 
+    ## https://raspi.tv/2014/rpi-gpio-update-and-detecting-both-rising-and-falling-edges
+    # GPIO.setup(btn_input, GPIO.IN)
+    # GPIO.add_event_detect(btn_input, GPIO.FALLING
+    #                       , bouncetime=200, callback=lambda x : print("threaded event",x)) 
 
     
     try:
