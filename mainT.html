@@ -1,41 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<script>
-    function httpGetAsync(theUrl, callback)
-    {
-	var xmlHttp = new XMLHttpRequest();
-	xmlHttp.onreadystatechange = function() { 
-            if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-		callback(xmlHttp.responseText);
-	}
-	xmlHttp.open("GET", theUrl, true); // true for asynchronous 
-	xmlHttp.send(null);
-    };
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Tents</title>
+<style>
+  /* ── reset & base ────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    padding: 12px;
+    min-height: 100vh;
+  }
 
-    function dummy_callback(){};
+  /* ── layout ──────────────────────────────────────────────────── */
+  h1 {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-bottom: 14px;
+    color: #444;
+  }
 
-    function async_action_target_action_dt(target,action,dt){
-	// target is dummy for now
-	return httpGetAsync("/" + target + "_"
-			    + action + dt + "s", dummy_callback);
-    };  
-</script>
+  .tent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    max-width: 720px;
+    margin: 0 auto 14px;
+  }
+
+  /* ── card ────────────────────────────────────────────────────── */
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.10);
+    padding: 16px;
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+  }
+
+  .card-title .title-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── awning icon ─────────────────────────────────────────────── */
+  .awning-icon {
+    flex-shrink: 0;
+  }
+
+  .card-title .badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #888;
+    background: #f0f2f5;
+    border-radius: 8px;
+    padding: 2px 8px;
+  }
+
+  /* ── position bar ────────────────────────────────────────────── */
+  .pos-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .pos-label { font-size: 0.75rem; color: #888; width: 2.8em; text-align: right; }
+
+  .pos-track {
+    flex: 1;
+    height: 10px;
+    background: #e8eaf0;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .pos-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4fc3f7, #0288d1);
+    border-radius: 99px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+
+  .pos-pct {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #0288d1;
+    width: 3em;
+    text-align: left;
+  }
+
+  /* ── button rows ─────────────────────────────────────────────── */
+  .row-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #aaa;
+    margin-bottom: 5px;
+    margin-top: 8px;
+  }
+
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  button {
+    flex: 1 1 auto;
+    min-width: 48px;
+    padding: 10px 4px;
+    border: none;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.12s, transform 0.08s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  button:active { transform: scale(0.93); }
+
+  .btn-open {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .btn-open:hover  { filter: brightness(0.93); }
+
+  .btn-close {
+    background: #fce4ec;
+    color: #c62828;
+  }
+  .btn-close:hover { filter: brightness(0.93); }
+
+  /* ── reset button ────────────────────────────────────────────── */
+  .reset-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  .btn-reset {
+    background: #fff3e0;
+    color: #e65100;
+    font-size: 0.78rem;
+    padding: 8px 14px;
+    flex: none;
+    border: 1px solid #ffe0b2;
+  }
+
+  /* ── override / unlock button ────────────────────────────────── */
+  .btn-override {
+    font-size: 0.78rem;
+    padding: 8px 14px;
+    flex: none;
+    border: 1px solid #b0bec5;
+    background: #eceff1;
+    color: #455a64;
+  }
+  .btn-override.active {
+    background: #b71c1c;
+    color: #fff;
+    border-color: #b71c1c;
+  }
+
+  /* ── full-close button ───────────────────────────────────────── */
+  .btn-fullclose {
+    font-size: 0.78rem;
+    padding: 8px 14px;
+    flex: none;
+    border: 1px solid #6a1b9a;
+    background: #f3e5f5;
+    color: #6a1b9a;
+  }
+  .btn-fullclose:hover { filter: brightness(0.93); }
+
+  /* ── inline confirmation panel ───────────────────────────────── */
+  .confirm-panel {
+    display: none;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: #4e342e;
+  }
+  .confirm-panel.visible { display: block; }
+  .confirm-panel .confirm-msg {
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }
+  .confirm-panel .confirm-btns {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-confirm-yes {
+    background: #6a1b9a;
+    color: #fff;
+    border: none;
+    font-size: 0.8rem;
+    padding: 7px 14px;
+    flex: none;
+  }
+  .btn-confirm-no {
+    background: #eeeeee;
+    color: #555;
+    border: 1px solid #ccc;
+    font-size: 0.8rem;
+    padding: 7px 14px;
+    flex: none;
+  }
+
+  /* ── master card ─────────────────────────────────────────────── */
+  .master-card { border: 2px solid #e3e6ef; }
+
+  .master-card .card-title { color: #555; }
+
+  /* ── manual control section ──────────────────────────────────── */
+  .manual-section {
+    margin-top: 12px;
+    border-top: 1px dashed #e0e0e0;
+    padding-top: 10px;
+  }
+
+  .manual-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .manual-header-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #aaa;
+  }
+
+  .manual-header-label.armed {
+    color: #c62828;
+  }
+
+  .manual-chevron {
+    font-size: 0.75rem;
+    color: #bbb;
+    transition: transform 0.2s;
+  }
+  .manual-chevron.open { transform: rotate(180deg); }
+
+  .manual-body {
+    display: none;
+    margin-top: 8px;
+  }
+  .manual-body.visible { display: block; }
+
+  /* hold-to-unlock button + progress track */
+  .manual-unlock-wrap {
+    position: relative;
+    margin-bottom: 10px;
+  }
+
+  .btn-manual-unlock {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid #b0bec5;
+    background: #eceff1;
+    color: #455a64;
+    border-radius: 9px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    position: relative;
+    overflow: hidden;
+    transition: none;
+  }
+
+  .btn-manual-unlock.armed {
+    background: #ffebee;
+    color: #c62828;
+    border-color: #ef9a9a;
+  }
+
+  /* progress fill that grows left-to-right while held */
+  .unlock-progress {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 0%;
+    background: rgba(2, 136, 209, 0.18);
+    transition: width 0.05s linear;
+    pointer-events: none;
+    border-radius: 9px;
+  }
+
+  /* hold-to-run open / close */
+  .manual-run-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-manual-run {
+    flex: 1;
+    padding: 12px 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 9px;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: filter 0.1s;
+  }
+  .btn-manual-run:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .btn-manual-open {
+    background: #c8e6c9;
+    color: #1b5e20;
+    border: 1px solid #a5d6a7;
+  }
+  .btn-manual-close {
+    background: #ffcdd2;
+    color: #b71c1c;
+    border: 1px solid #ef9a9a;
+  }
+  .btn-manual-run:active:not(:disabled) { filter: brightness(0.88); }
+
+  /* ── status flash ────────────────────────────────────────────── */
+  .status-bar {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 10px;
+    min-height: 1.2em;
+    transition: color 0.3s;
+  }
+  .status-bar.err { color: #c62828; }
+
+  /* ── settings card ──────────────────────────────────────────── */
+  .settings-card { border: 2px dashed #e3e6ef; }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .settings-row label {
+    font-size: 0.82rem;
+    color: #555;
+    flex: 1 1 auto;
+  }
+
+  .settings-row input[type=number] {
+    width: 72px;
+    padding: 8px 6px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+  .settings-row input[type=number]::-webkit-inner-spin-button,
+  .settings-row input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+
+  .btn-save {
+    background: #e8eaf6;
+    color: #283593;
+    font-size: 0.82rem;
+    padding: 8px 16px;
+    flex: none;
+    border: 1px solid #c5cae9;
+  }
+
+  .guard-note {
+    font-size: 0.72rem;
+    color: #999;
+    margin-top: 6px;
+  }
+
+  /* ── disabled state ──────────────────────────────────────────── */
+  button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── close-blocked: bar turns red when tent is already closed ── */
+  .pos-fill.blocked {
+    background: linear-gradient(90deg, #ef9a9a, #c62828);
+  }
+</style>
 </head>
-
 <body>
+
+<h1>Tent Control</h1>
+
+<div class="tent-grid" id="tent-grid">
   {% for device in Appliances %}
-  <div>{{ device['idname'] }}
-    {% for op in device['timeActionsSym'] %}
-    <span>
-      <a href="#" onclick="async_action_target_action_dt('{{ device['idname'] }}', 'open', '{{ op }}')">
-	open {{ op }}s </a> | 
-    </span>
-    
-    <span>
-      <a href="#" onclick="async_action_target_action_dt('{{ device['idname'] }}', 'close', '{{ op }}')"> close {{ op }}s </a> |
-    </span>
+  {% set name = device['idname'] %}
+  {% set is_left = name.lower().endswith('left') %}
+  <div class="card" id="card-{{ name }}">
+    <div class="card-title">
+      <span class="title-left">
+        {# Two-awning balcony icon – active side highlighted #}
+        <svg class="awning-icon" width="54" height="36" viewBox="0 0 54 36"
+             fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          {# wall / balcony floor #}
+          <rect x="0" y="28" width="54" height="3" rx="1"
+                fill="#b0bec5"/>
+          {# left awning arm #}
+          <line x1="5" y1="28" x2="5" y2="20" stroke="#90a4ae" stroke-width="1.5"/>
+          <line x1="25" y1="28" x2="25" y2="20" stroke="#90a4ae" stroke-width="1.5"/>
+          {# left awning canopy #}
+          <polygon points="2,20 28,20 25,28 5,28"
+                   fill="{% if is_left %}#0288d1{% else %}#cfd8dc{% end %}"
+                   opacity="{% if is_left %}1{% else %}0.5{% end %}"/>
+          <line x1="2" y1="20" x2="28" y2="20"
+                stroke="{% if is_left %}#01579b{% else %}#90a4ae{% end %}"
+                stroke-width="1.5"/>
+          {# right awning arm #}
+          <line x1="29" y1="28" x2="29" y2="20" stroke="#90a4ae" stroke-width="1.5"/>
+          <line x1="49" y1="28" x2="49" y2="20" stroke="#90a4ae" stroke-width="1.5"/>
+          {# right awning canopy #}
+          <polygon points="26,20 52,20 49,28 29,28"
+                   fill="{% if not is_left %}#0288d1{% else %}#cfd8dc{% end %}"
+                   opacity="{% if not is_left %}1{% else %}0.5{% end %}"/>
+          <line x1="26" y1="20" x2="52" y2="20"
+                stroke="{% if not is_left %}#01579b{% else %}#90a4ae{% end %}"
+                stroke-width="1.5"/>
+          {# stripe detail on active awning #}
+          {% if is_left %}
+          <line x1="8"  y1="20" x2="6"  y2="28" stroke="#fff" stroke-width="1" opacity="0.5"/>
+          <line x1="14" y1="20" x2="11" y2="28" stroke="#fff" stroke-width="1" opacity="0.5"/>
+          <line x1="20" y1="20" x2="17" y2="28" stroke="#fff" stroke-width="1" opacity="0.5"/>
+          {% else %}
+          <line x1="32" y1="20" x2="30" y2="28" stroke="#fff" stroke-width="1" opacity="0.5"/>
+          <line x1="38" y1="20" x2="35" y2="28" stroke="#fff" stroke-width="1" opacity="0.5"/>
+          <line x1="44" y1="20" x2="41" y2="28" stroke="#fff" stroke-width="1" opacity="0.5"/>
+          {% end %}
+        </svg>
+        {{ name }}
+      </span>
+      <span class="badge" id="badge-{{ name }}">–</span>
+    </div>
+
+    <div class="pos-wrap">
+      <span class="pos-label">closed</span>
+      <div class="pos-track">
+        <div class="pos-fill" id="fill-{{ name }}"></div>
+      </div>
+      <span class="pos-pct" id="pct-{{ name }}">0%</span>
+    </div>
+
+    <div class="row-label">Open</div>
+    <div class="btn-row">
+      {% for op in device['timeActionsSym'] %}
+      <button class="btn-open"
+              onclick="action('{{ name }}','open',{{ op }})"
+              id="btn-{{ name }}-open-{{ op }}">+{{ op }}s</button>
+      {% end for %}
+    </div>
+
+    <div class="row-label">Close</div>
+    <div class="btn-row">
+      {% for op in device['timeActionsSym'] %}
+      <button class="btn-close"
+              onclick="action('{{ name }}','close',{{ op }})"
+              id="btn-{{ name }}-close-{{ op }}">-{{ op }}s</button>
+      {% end for %}
+    </div>
+
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn-fullclose" id="btn-fullclose-{{ name }}"
+              onclick="fullCloseAsk('{{ name }}')">
+        Full close
+      </button>
+    </div>
+
+    <div class="confirm-panel" id="confirm-{{ name }}">
+      <div class="confirm-msg" id="confirm-msg-{{ name }}"></div>
+      <div class="confirm-btns">
+        <button class="btn-confirm-yes" onclick="confirmYes('{{ name }}')">Confirm</button>
+        <button class="btn-confirm-no"  onclick="confirmNo('{{ name }}')">Cancel</button>
+      </div>
+    </div>
+
+    <div class="reset-row">
+      <button class="btn-override" id="btn-override-{{ name }}"
+              onclick="toggleOverride('{{ name }}')">
+        Unlock close
+      </button>
+      <button class="btn-reset" onclick="resetAsk('{{ name }}')">
+        Reset &#8627; fully closed
+      </button>
+    </div>
+
+    {# ── manual control section ─────────────────────────────────── #}
+    <div class="manual-section">
+      <div class="manual-header" onclick="toggleManualSection('{{ name }}')">
+        <span class="manual-header-label" id="manual-label-{{ name }}">Manual</span>
+        <span class="manual-chevron" id="manual-chevron-{{ name }}">&#9660;</span>
+      </div>
+      <div class="manual-body" id="manual-body-{{ name }}">
+        <div class="manual-unlock-wrap">
+          <button class="btn-manual-unlock" id="btn-manual-unlock-{{ name }}"
+                  onmousedown="manualUnlockStart('{{ name }}')"
+                  ontouchstart="manualUnlockStart('{{ name }}')"
+                  onmouseup="manualUnlockCancel('{{ name }}')"
+                  onmouseleave="manualUnlockCancel('{{ name }}')"
+                  ontouchend="manualUnlockCancel('{{ name }}')"
+                  ontouchcancel="manualUnlockCancel('{{ name }}')">
+            <span class="unlock-progress" id="unlock-prog-{{ name }}"></span>
+            <span id="unlock-label-{{ name }}">Hold 3 s to arm manual</span>
+          </button>
+        </div>
+        <div class="manual-run-row">
+          <button class="btn-manual-run btn-manual-open"
+                  id="btn-manual-open-{{ name }}"
+                  disabled
+                  onmousedown="manualRunStart('{{ name }}','open')"
+                  ontouchstart="manualRunStart('{{ name }}','open')"
+                  onmouseup="manualRunStop('{{ name }}')"
+                  onmouseleave="manualRunStop('{{ name }}')"
+                  ontouchend="manualRunStop('{{ name }}')"
+                  ontouchcancel="manualRunStop('{{ name }}')">
+            Hold Open
+          </button>
+          <button class="btn-manual-run btn-manual-close"
+                  id="btn-manual-close-{{ name }}"
+                  disabled
+                  onmousedown="manualRunStart('{{ name }}','close')"
+                  ontouchstart="manualRunStart('{{ name }}','close')"
+                  onmouseup="manualRunStop('{{ name }}')"
+                  onmouseleave="manualRunStop('{{ name }}')"
+                  ontouchend="manualRunStop('{{ name }}')"
+                  ontouchcancel="manualRunStop('{{ name }}')">
+            Hold Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% end for %}
+</div>
+
+{# ── master card ─────────────────────────────────────────────── #}
+<div class="tent-grid">
+<div class="card master-card">
+  <div class="card-title">All tents <span class="badge">master</span></div>
+
+  <div class="row-label">Open all</div>
+  <div class="btn-row" id="master-open-row">
+    {% for op in Appliances[0]['timeActionsSym'] %}
+    <button class="btn-open"
+            onclick="masterAction('open',{{ op }})"
+            id="master-open-{{ op }}">+{{ op }}s</button>
     {% end for %}
-  </div>  
-  
-  
-  {% end for %}  
+  </div>
+
+  <div class="row-label">Close all</div>
+  <div class="btn-row" id="master-close-row">
+    {% for op in Appliances[0]['timeActionsSym'] %}
+    <button class="btn-close"
+            onclick="masterAction('close',{{ op }})"
+            id="master-close-{{ op }}">-{{ op }}s</button>
+    {% end for %}
+  </div>
+
+  <div class="reset-row">
+    <button class="btn-reset" onclick="masterResetAsk()">
+      Reset all &#8627; fully closed
+    </button>
+  </div>
+</div>
+</div>
+
+{# ── settings card ───────────────────────────────────────────── #}
+<div class="tent-grid">
+<div class="card settings-card">
+  <div class="card-title">Settings <span class="badge">runtime</span></div>
+
+  <div class="settings-row">
+    <label for="inp-close-factor">Close overhead %
+      <span class="guard-note">(extra time closing needs vs opening)</span>
+    </label>
+    <input type="number" id="inp-close-factor"
+           min="0" max="200" step="1" value="20">
+    <button class="btn-save" onclick="saveConfig()">Save</button>
+  </div>
+  <div class="guard-note" id="guard-note"></div>
+</div>
+</div>
+
+<div class="status-bar" id="status-bar"></div>
+
+{# ── master-reset modal ──────────────────────────────────────────── #}
+<div id="master-reset-modal" style="display:none; position:fixed; inset:0;
+     background:rgba(0,0,0,0.45); z-index:100; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:14px; padding:20px 22px;
+              max-width:320px; width:90%; box-shadow:0 4px 24px rgba(0,0,0,0.18);">
+    <div style="font-size:0.9rem; font-weight:600; margin-bottom:10px; color:#333;">
+      Reset all tents
+    </div>
+    <div style="font-size:0.82rem; color:#555; margin-bottom:16px; line-height:1.5;">
+      Do you visually confirm that <strong>all tents are fully closed</strong>?
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button class="btn-confirm-no"  onclick="masterResetCancel()">Cancel</button>
+      <button class="btn-confirm-yes" onclick="masterResetConfirm()">Yes, reset all</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── helpers ─────────────────────────────────────────────────────
+var TENT_NAMES = [{% for d in Appliances %}"{{ d['idname'] }}"{% if d is not Appliances[-1] %},{% end %}{% end %}];
+
+function setStatus(msg, isErr) {
+  var el = document.getElementById('status-bar');
+  el.textContent = msg;
+  el.className = 'status-bar' + (isErr ? ' err' : '');
+}
+
+function get(url, cb) {
+  var x = new XMLHttpRequest();
+  x.onreadystatechange = function() {
+    if (x.readyState !== 4) return;
+    if (cb) cb(x.status, x.responseText);
+  };
+  x.open("GET", url, true);
+  x.send(null);
+}
+
+function postForm(url, params, cb) {
+  var x = new XMLHttpRequest();
+  x.onreadystatechange = function() {
+    if (x.readyState !== 4) return;
+    if (cb) cb(x.status, x.responseText);
+  };
+  x.open("POST", url, true);
+  x.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+  var body = Object.keys(params).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  x.send(body);
+}
+
+function postEmpty(url, cb) {
+  var x = new XMLHttpRequest();
+  x.onreadystatechange = function() {
+    if (x.readyState !== 4) return;
+    if (cb) cb(x.status, x.responseText);
+  };
+  x.open("POST", url, true);
+  x.send(null);
+}
+
+// ── tent action ──────────────────────────────────────────────────
+function action(name, dir, dt) {
+  var url = '/' + name + '_' + dir + dt + 's';
+  setStatus('');
+  get(url, function(status, body) {
+    if (status === 200) {
+      setStatus(name + ': ' + dir + ' ' + dt + 's sent');
+    } else {
+      setStatus(name + ': ' + (body || 'error ' + status), true);
+    }
+    refreshStatus();
+  });
+}
+
+function masterAction(dir, dt) {
+  TENT_NAMES.forEach(function(name) { action(name, dir, dt); });
+}
+
+// ── confirm panel (shared by full-close and reset) ───────────────
+// Cache of last-known status data, updated by refreshStatus.
+var lastStatus   = {};
+// pendingConfirm[name] = function to call on "Yes"
+var pendingConfirm = {};
+
+function showConfirm(name, message, onYes) {
+  pendingConfirm[name] = onYes;
+  document.getElementById('confirm-msg-' + name).textContent = message;
+  document.getElementById('confirm-' + name).classList.add('visible');
+}
+
+function confirmYes(name) {
+  document.getElementById('confirm-' + name).classList.remove('visible');
+  if (pendingConfirm[name]) {
+    pendingConfirm[name]();
+    delete pendingConfirm[name];
+  }
+}
+
+function confirmNo(name) {
+  document.getElementById('confirm-' + name).classList.remove('visible');
+  delete pendingConfirm[name];
+  // Re-enable full-close button in case it was disabled
+  var fc = document.getElementById('btn-fullclose-' + name);
+  if (fc) fc.disabled = false;
+}
+
+// ── full close ───────────────────────────────────────────────────
+function fullCloseAsk(name) {
+  var d = lastStatus[name];
+  if (!d) {
+    setStatus(name + ': no status data yet, try again', true);
+    return;
+  }
+  var pos    = d.position_seconds;
+  var factor = (lastStatus._config && lastStatus._config.close_factor) || 1.0;
+  var motorDt = Math.round(pos * factor * 10) / 10;
+
+  if (pos <= 0) {
+    setStatus(name + ': already fully closed', true);
+    return;
+  }
+
+  document.getElementById('btn-fullclose-' + name).disabled = true;
+  showConfirm(name,
+    'Motor will run for ' + motorDt.toFixed(1) + 's '
+    + '(position ' + pos.toFixed(1) + 's \u00d7 factor '
+    + factor.toFixed(2) + '). Proceed?',
+    function() {
+      document.getElementById('btn-fullclose-' + name).disabled = false;
+      postEmpty('/' + name + '/fullclose', function(status, body) {
+        if (status === 200) {
+          var data = {};
+          try { data = JSON.parse(body); } catch(e) {}
+          setStatus(name + ': full close sent (' + (data.requested_dt || '?') + 's motor)');
+        } else {
+          setStatus(name + ': full close failed \u2013 ' + (body || 'error ' + status), true);
+        }
+        refreshStatus();
+      });
+    }
+  );
+}
+
+// ── reset ────────────────────────────────────────────────────────
+function resetAsk(name) {
+  showConfirm(name,
+    'Do you visually confirm that ' + name + ' is fully closed?',
+    function() { resetTent(name); }
+  );
+}
+
+function resetTent(name) {
+  postEmpty('/' + name + '/reset', function(status) {
+    if (status === 200) {
+      setStatus(name + ': reset to fully closed');
+    } else {
+      setStatus(name + ': reset failed', true);
+    }
+    refreshStatus();
+  });
+}
+
+function masterResetAsk() {
+  document.getElementById('master-reset-modal').style.display = 'flex';
+}
+
+function masterResetCancel() {
+  document.getElementById('master-reset-modal').style.display = 'none';
+}
+
+function masterResetConfirm() {
+  masterResetCancel();
+  TENT_NAMES.forEach(function(name) { resetTent(name); });
+}
+
+// ── manual control ───────────────────────────────────────────────
+var manualUnlockTimers  = {};   // name -> { raf, startTs }
+var manualRunActive     = {};   // name -> true while hold-to-run is in progress
+
+function toggleManualSection(name) {
+  var body    = document.getElementById('manual-body-' + name);
+  var chevron = document.getElementById('manual-chevron-' + name);
+  var open    = body.classList.toggle('visible');
+  chevron.classList.toggle('open', open);
+}
+
+// ── hold-to-unlock (3 s) ─────────────────────────────────────────
+var UNLOCK_HOLD_MS = 3000;
+
+function manualUnlockStart(name) {
+  // If already armed, a second press disarms.
+  var d = lastStatus[name];
+  if (d && d.manual_unlocked) {
+    postForm('/' + name + '/manual_unlock', {enabled: 0}, function() { refreshStatus(); });
+    return;
+  }
+
+  var startTs = Date.now();
+  var prog    = document.getElementById('unlock-prog-' + name);
+  var label   = document.getElementById('unlock-label-' + name);
+
+  function tick() {
+    var elapsed = Date.now() - startTs;
+    var pct     = Math.min(elapsed / UNLOCK_HOLD_MS * 100, 100);
+    prog.style.width = pct + '%';
+    if (elapsed >= UNLOCK_HOLD_MS) {
+      // Held long enough — arm via server
+      prog.style.width = '0%';
+      postForm('/' + name + '/manual_unlock', {enabled: 1}, function(status, body) {
+        if (status === 200) {
+          setStatus(name + ': manual ARMED – hold Open or Close');
+        } else {
+          setStatus(name + ': manual arm failed', true);
+        }
+        refreshStatus();
+      });
+      delete manualUnlockTimers[name];
+      return;
+    }
+    manualUnlockTimers[name] = { raf: requestAnimationFrame(tick), startTs: startTs };
+  }
+  manualUnlockTimers[name] = { raf: requestAnimationFrame(tick), startTs: startTs };
+}
+
+function manualUnlockCancel(name) {
+  if (manualUnlockTimers[name]) {
+    cancelAnimationFrame(manualUnlockTimers[name].raf);
+    delete manualUnlockTimers[name];
+  }
+  var prog = document.getElementById('unlock-prog-' + name);
+  if (prog) prog.style.width = '0%';
+}
+
+// ── hold-to-run ───────────────────────────────────────────────────
+function manualRunStart(name, direction) {
+  if (manualRunActive[name]) return;
+  manualRunActive[name] = true;
+  postForm('/' + name + '/manual_start', {direction: direction}, function(status, body) {
+    if (status !== 200) {
+      setStatus(name + ': manual start failed – ' + (body || status), true);
+      manualRunActive[name] = false;
+      refreshStatus();
+    }
+    // On success the motor is now running; manualRunStop will stop it.
+  });
+}
+
+function manualRunStop(name) {
+  if (!manualRunActive[name]) return;
+  manualRunActive[name] = false;
+  postEmpty('/' + name + '/manual_stop', function(status) {
+    if (status !== 200) {
+      setStatus(name + ': manual stop failed', true);
+    }
+    refreshStatus();
+  });
+}
+
+// Update manual UI from status poll
+function updateManualUI(name, d) {
+  var armed   = d.manual_unlocked || false;
+  var btn     = document.getElementById('btn-manual-unlock-' + name);
+  var label   = document.getElementById('unlock-label-' + name);
+  var hdrLbl  = document.getElementById('manual-label-' + name);
+  var btnOpen  = document.getElementById('btn-manual-open-' + name);
+  var btnClose = document.getElementById('btn-manual-close-' + name);
+
+  if (btn) {
+    btn.classList.toggle('armed', armed);
+  }
+  if (label) {
+    label.textContent = armed ? 'Armed – hold to run (tap to disarm)' : 'Hold 3 s to arm manual';
+  }
+  if (hdrLbl) {
+    hdrLbl.classList.toggle('armed', armed);
+    hdrLbl.textContent = armed ? 'Manual \u26a0 ARMED' : 'Manual';
+  }
+
+  var motorBusy = (d.active_direction !== null);
+  if (btnOpen)  btnOpen.disabled  = !armed || motorBusy;
+  if (btnClose) btnClose.disabled = !armed || motorBusy;
+}
+
+// ── override / unlock ────────────────────────────────────────────
+function toggleOverride(name) {
+  var btn = document.getElementById('btn-override-' + name);
+  var isActive = btn.classList.contains('active');
+  var newVal = isActive ? 0 : 1;
+  postForm('/' + name + '/override', {enabled: newVal}, function(status, body) {
+    if (status === 200) {
+      var data = JSON.parse(body);
+      setOverrideUI(name, data.override_mode);
+      setStatus(name + ': override ' + (data.override_mode ? 'ON' : 'OFF'));
+    } else {
+      setStatus(name + ': override toggle failed', true);
+    }
+    refreshStatus();
+  });
+}
+
+function setOverrideUI(name, active) {
+  var btn = document.getElementById('btn-override-' + name);
+  if (!btn) return;
+  if (active) {
+    btn.classList.add('active');
+    btn.textContent = 'OVERRIDE ON';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = 'Unlock close';
+  }
+}
+
+// ── reset ────────────────────────────────────────────────────────
+function resetTent(name) {
+  postEmpty('/' + name + '/reset', function(status) {
+    if (status === 200) {
+      setStatus(name + ': reset to fully closed');
+    } else {
+      setStatus(name + ': reset failed', true);
+    }
+    refreshStatus();
+  });
+}
+
+// ── config ───────────────────────────────────────────────────────
+function saveConfig() {
+  var inp = document.getElementById('inp-close-factor');
+  var pct = parseFloat(inp.value);
+  if (isNaN(pct) || pct < 0 || pct > 200) {
+    setStatus('Close overhead must be 0–200 %', true);
+    return;
+  }
+  var factor = 1.0 + pct / 100.0;
+  postForm('/config', {close_factor: factor.toFixed(4)}, function(status, body) {
+    if (status === 200) {
+      setStatus('Close overhead saved: ' + pct.toFixed(0) + '% (factor ' + factor.toFixed(2) + ')');
+    } else {
+      setStatus('Config save failed: ' + (body || status), true);
+    }
+  });
+}
+
+// ── status polling ───────────────────────────────────────────────
+function refreshStatus() {
+  get('/status', function(status, body) {
+    if (status !== 200) return;
+    var data;
+    try { data = JSON.parse(body); } catch(e) { return; }
+
+    // Update close-factor input only if user is not currently editing it.
+    var inp = document.getElementById('inp-close-factor');
+    if (data.config && inp !== document.activeElement) {
+      var pct = Math.round((data.config.close_factor - 1.0) * 100);
+      inp.value = pct;
+    }
+
+    // Update guard note
+    var note = document.getElementById('guard-note');
+    if (note && data.config) {
+      note.textContent = 'Close blocked when position \u2264 '
+        + data.config.close_guard_seconds + 's (tent already fully closed)';
+    }
+
+    TENT_NAMES.forEach(function(name) {
+      var tents = data.tents || data;   // handle both shapes gracefully
+      var d = tents[name];
+      if (!d) return;
+
+      // Cache for full-close preview
+      lastStatus[name] = d;
+      lastStatus._config = data.config;
+
+      var pct          = d.position_pct;
+      var dir          = d.active_direction;
+      var closeBlocked = d.close_blocked;
+      var overrideMode = d.override_mode || false;
+
+      // Override button state
+      setOverrideUI(name, overrideMode);
+
+      // Manual section state
+      updateManualUI(name, d);
+
+      // Position bar
+      var fill  = document.getElementById('fill-' + name);
+      var label = document.getElementById('pct-'  + name);
+      var badge = document.getElementById('badge-' + name);
+      if (fill) {
+        fill.style.width = pct.toFixed(1) + '%';
+        // Red tint when tent is at/near closed end-stop
+        fill.className = 'pos-fill' + (closeBlocked ? ' blocked' : '');
+      }
+      if (label) label.textContent = Math.round(pct) + '%';
+      if (badge) badge.textContent = dir ? dir + '\u2026' : Math.round(pct) + '% open';
+
+      // Disable buttons:
+      //   - opposite direction when one is active (interlock – always enforced)
+      //   - all close buttons when close_blocked AND override is OFF
+      ['open', 'close'].forEach(function(a) {
+        var interlockDisable = (dir !== null && dir !== a);
+        var guardDisable     = (a === 'close' && closeBlocked && !overrideMode);
+        var btns = document.querySelectorAll('#card-' + name + ' .btn-' + a);
+        btns.forEach(function(b) {
+          b.disabled = interlockDisable || guardDisable;
+        });
+      });
+    });
+  });
+}
+
+// Poll every 2 seconds
+setInterval(refreshStatus, 2000);
+refreshStatus();
+</script>
 </body>
+</html>
